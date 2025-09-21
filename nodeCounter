@@ -1,0 +1,110 @@
+//@version=5
+//NdS node counter
+indicator("NDS Node Counter", "NDS", overlay=true, max_labels_count=500, max_lines_count=500)
+
+//input and Setiings
+
+pivotLookback = input.int(15, "Pivot Lookback Period", minval=2) 
+lineColor = input.color(color.new(color.white, 40), "Line Color")
+labelColor = input.color(color.new(color.yellow, 0), "Label Color")
+labelSize = input.string(size.normal, "Label Size", options = [size.tiny, size.small, size.normal, size.large, size.huge])
+
+
+// pivot Finder
+
+float pivotHighPrice = ta.pivothigh(high, pivotLookback, pivotLookback)
+float pivotLowPrice = ta.pivotlow(low, pivotLookback, pivotLookback)
+
+
+//core
+var array<float> nodePrices = array.new<float>()
+var array<int> nodeBars = array.new<int>()
+var array<string> nodeTypes = array.new<string>()
+
+var lastUpN3Bar = 0
+var lastDownN3Bar = 0
+
+// Updater Funx
+
+if not na(pivotHighPrice)
+    // handler
+    if array.size(nodeTypes) == 0
+        array.push(nodePrices, pivotHighPrice)
+        array.push(nodeBars, bar_index - pivotLookback)
+        array.push(nodeTypes, "H")
+    // empty checker.
+    else if array.get(nodeTypes, array.size(nodeTypes) - 1) == "L"
+        array.push(nodePrices, pivotHighPrice)
+        array.push(nodeBars, bar_index - pivotLookback)
+        array.push(nodeTypes, "H")
+
+if not na(pivotLowPrice)
+    if array.size(nodeTypes) == 0
+        array.push(nodePrices, pivotLowPrice)
+        array.push(nodeBars, bar_index - pivotLookback)
+        array.push(nodeTypes, "L")
+    else if array.get(nodeTypes, array.size(nodeTypes) - 1) == "H"
+        array.push(nodePrices, pivotLowPrice)
+        array.push(nodeBars, bar_index - pivotLookback)
+        array.push(nodeTypes, "L")
+
+
+//plot
+draw_nds_count(n1_bar, n1_price, n2_bar, n2_price, n3_bar, n3_price, trend_type) =>
+    label.new(n1_bar, n1_price, "1", color=labelColor, textcolor=color.black, size=labelSize, style=trend_type == "UP" ? label.style_label_down : label.style_label_up)
+    label.new(n2_bar, n2_price, "2", color=labelColor, textcolor=color.black, size=labelSize, style=trend_type == "UP" ? label.style_label_down : label.style_label_up)
+    label.new(n3_bar, n3_price, "3", color=labelColor, textcolor=color.black, size=labelSize, style=trend_type == "UP" ? label.style_label_down : label.style_label_up)
+    line.new(n1_bar, n1_price, n2_bar, n2_price, color=lineColor, width=2)
+    line.new(n2_bar, n2_price, n3_bar, n3_price, color=lineColor, width=2)
+
+
+
+if array.size(nodePrices) > 5
+    
+    //(L-H-L-H-L-H sequence)
+    if array.get(nodeTypes, array.size(nodeTypes) - 1) == "H"
+        i = array.size(nodePrices) - 1
+        if array.get(nodeTypes, i - 1) == "L" and array.get(nodeTypes, i - 2) == "H" and array.get(nodeTypes, i-3) == "L" and array.get(nodeTypes, i-4) == "H" and array.get(nodeTypes, i-5) == "L"
+            n3_price = array.get(nodePrices, i)
+            n3_bar = array.get(nodeBars, i)
+            p3_price = array.get(nodePrices, i-1) 
+            
+            n2_price = array.get(nodePrices, i-2)
+            n2_bar = array.get(nodeBars, i-2)
+            p2_price = array.get(nodePrices, i-3)
+
+            n1_price = array.get(nodePrices, i-4)
+            n1_bar = array.get(nodeBars, i-4)
+            p1_price = array.get(nodePrices, i-5)
+            
+            correction1 = n1_price - p1_price
+            correction2 = n2_price - p2_price
+            correction3 = n3_price - p3_price
+            
+            if (correction2 >= correction1) and (correction3 > correction2) and (n2_price > n1_price) and (n3_price > n2_price) and (p2_price > p1_price) and n3_bar > lastUpN3Bar
+                draw_nds_count(n1_bar, n1_price, n2_bar, n2_price, n3_bar, n3_price, "UP")
+                lastUpN3Bar := n3_bar
+
+    //(H-L-H-L-H-L sequence)
+    if array.get(nodeTypes, array.size(nodeTypes) - 1) == "L"
+        i = array.size(nodePrices) - 1
+        if array.get(nodeTypes, i - 1) == "H" and array.get(nodeTypes, i - 2) == "L" and array.get(nodeTypes, i-3) == "H" and array.get(nodeTypes, i-4) == "L" and array.get(nodeTypes, i-5) == "H"
+            n3_price = array.get(nodePrices, i)
+            n3_bar = array.get(nodeBars, i)
+            p3_price = array.get(nodePrices, i-1)
+
+            n2_price = array.get(nodePrices, i-2)
+            n2_bar = array.get(nodeBars, i-2)
+            p2_price = array.get(nodePrices, i-3)
+
+            n1_price = array.get(nodePrices, i-4)
+            n1_bar = array.get(nodeBars, i-4)
+            p1_price = array.get(nodePrices, i-5)
+
+            correction1 = p1_price - n1_price
+            correction2 = p2_price - n2_price
+            correction3 = p3_price - n3_price
+
+            if (correction2 >= correction1) and (correction3 > correction2) and (n2_price < n1_price) and (n3_price < n2_price) and (p2_price < p1_price) and n3_bar > lastDownN3Bar
+                draw_nds_count(n1_bar, n1_price, n2_bar, n2_price, n3_bar, n3_price, "DOWN")
+                lastDownN3Bar := n3_bar
