@@ -1,5 +1,7 @@
-Identifying Nodes in the NDS Strategy
-This pamphlet provides a detailed explanation of the conditions and rules for identifying Nodes 1, 2, and 3 in the Nodal Displacement Sequencing (NDS) strategy, based on the teachings of Iraj Jafarian (Fuzzy logic). Correct identification of these nodes is the foundation for successfully implementing the strategy and developing NDS algotrading robots.
+
+<img width="1611" height="809" alt="Screenshot 2025-10-18 at 16 45 28" src="https://github.com/user-attachments/assets/cd224622-6c8a-435b-8ce6-97c38f1e3d47" />
+
+
 
 Node 1 (N1 / S1) - The Trend Start Point
 Node 1 is the potential starting point of a new trend after a Reversal.
